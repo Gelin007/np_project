@@ -41,14 +41,17 @@ extends BFSGraphSearch<N, E> {
 
         // handle the start node
         this.visitor.startVertex(graph, startVertex);
-        visited.add(startVertex);
         this.visitor.discoverVertex(graph, startVertex);
+
         todo.offer(startVertex);
 
         // process nodes as long as there are nodes in the queue
         while (todo.peek() != null) {
             // get the first node in the queue and generate the outgoing edges
+            // add the node to the visited set
             N next = todo.poll();
+            visited.add(next);
+
             for (E edge : graph.getEdges(next)) {
 
                 // check whether the reached state is already discovered (a node
@@ -56,15 +59,13 @@ extends BFSGraphSearch<N, E> {
                 // the queue)
                 N target = edge.getTarget();
                 if (!visited.contains(target) && !todo.contains(target)) {
-
-                    // not discovered => add to the visited set and the queue,
+                    // not discovered => add to the queue,
                     // also tell the visitor (discovered node and tree edge)
                     this.visitor.treeEdge(graph, edge);
-                    visited.add(target);
                     this.visitor.discoverVertex(graph, target);
+
                     todo.offer(target);
                 } else {
-
                     // discovered => tell the visitor there is a non-tree edge
                     this.visitor.nonTreeEdge(graph, edge);
                 }

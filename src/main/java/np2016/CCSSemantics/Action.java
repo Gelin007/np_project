@@ -27,13 +27,14 @@ public final class Action {
     private final boolean weak;
 
     /**
-     * Constructs a strong action (i.e. non tau action).
+     * Constructs an action. If {@code action} is equal to "i", a weak action
+     * is created. A strong action is created otherwise.
      *
      * @param action
      *            name of the action.
      */
     public Action(final String action) {
-        this(action, false);
+        this(action, "i".equals(action));
     }
 
     /**

@@ -14,8 +14,7 @@ the LTS of a given CCS or CCS-vp program. The main goal of this project is to re
 this functionality. Because this course is all about concurrency your task is
 not only the simple recreation but rather to do so using concurrency. In
 contrast to pseuCo.com this project only supports CCS and not CCS-vp as its
-input. Also, it is not possible to input taus (i.e. internal actions). They can
-only arise due to synchronization.
+input.
 
 The project consists of two major parts. Only the first one is required to pass the project.
 

@@ -165,20 +165,25 @@ public class CCSExplorer {
      */
     private static CCSProgram parseInputFile(final Diagnostic diagnostic,
             final String fileName) {
-        Reader reader;
-        try {
-            reader = new InputStreamReader(new FileInputStream(fileName));
+        try (Reader reader = new InputStreamReader(
+                new FileInputStream(fileName)
+                )) {
+            Lexer lexer = new Lexer(diagnostic, reader, fileName);
+            Parser parser = new Parser(
+                    diagnostic, lexer, new ASTFactory(diagnostic)
+            );
+
+            return parser.parseCCSProgram();
         } catch (FileNotFoundException e) {
             System.err.println("File not found!");
             return null;
+        } catch (IOException e) {
+            System.err.println(String.format(
+                    "An error occurred while reading file %s!",
+                    fileName
+                    ));
+            return null;
         }
-
-        Lexer lexer = new Lexer(diagnostic, reader, fileName);
-        Parser parser = new Parser(
-                diagnostic, lexer, new ASTFactory(diagnostic)
-                );
-
-        return parser.parseCCSProgram();
     }
 
     /**
