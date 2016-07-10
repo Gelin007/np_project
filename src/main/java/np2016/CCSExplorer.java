@@ -24,6 +24,8 @@ import np2016.CCSSemantics.State;
 import np2016.CCSSemantics.Transition;
 import np2016.Diagnostic.Diagnostic;
 import np2016.Diagnostic.PrintDiagnostic;
+import np2016.GraphSearch.ConcurrentGraphSearch;
+import np2016.GraphSearch.ConcurrentLTSBuilder;
 import np2016.GraphSearch.GraphSearch;
 import np2016.GraphSearch.LTSBuilder;
 import np2016.GraphSearch.SequentialBFSGraphSearch;
@@ -212,11 +214,10 @@ public class CCSExplorer {
             builder = new SequentialLTSBuilder();
             search = new SequentialBFSGraphSearch<State, Transition>(builder);
         } else {
-            // concurrent solution
-            // TODO implement this!
-            throw new UnsupportedOperationException("Implement assignment 1!");
+        	builder = new ConcurrentLTSBuilder();
+        	search = new ConcurrentGraphSearch<State, Transition>(builder);
         }
-
+        
         for (State state : semantics.getSources()) {
             search.search(semantics, state);
             LTS lts = builder.getLTS();
