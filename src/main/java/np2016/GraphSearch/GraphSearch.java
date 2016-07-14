@@ -23,4 +23,7 @@ public interface GraphSearch<N extends Node<?>, E extends Edge<N, ?>> {
      *            the node from where the search should start.
      */
     void search(Graph<N, E> graph, N startVertex);
+    
+    boolean getWatcher();
+    
 }

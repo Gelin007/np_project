@@ -28,7 +28,6 @@ public abstract class LTSBuilder implements BFSGraphVisitor<State, Transition> {
      */
     public LTS getLTS() {
         assert this.lts != null;
-
         return this.lts;
     }
 

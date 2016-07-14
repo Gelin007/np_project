@@ -75,4 +75,9 @@ extends BFSGraphSearch<N, E> {
             this.visitor.finishVertex(graph, next);
         }
     }
+
+	@Override
+	public boolean getWatcher() {
+		return true;
+	}
 }

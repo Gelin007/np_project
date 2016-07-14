@@ -96,7 +96,8 @@ public class LTS implements Graph<State, Transition> {
      *            the state to be added.
      */
     public void addState(final State state) {
-        assert state != null && !this.edges.containsKey(state);
+        assert state != null;
+        assert !this.edges.containsKey(state);
 
         State newState = new State(state.getInfo());
 

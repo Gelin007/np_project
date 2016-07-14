@@ -1,5 +1,6 @@
 package np2016.GraphSearch;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -18,39 +19,41 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	final Set<N> visited;
 	// stores all nodes that still need processing
 	final HashMap<Integer, Queue<N>> todo;
-	final HashMap<Integer, Integer> checker;
-//	private Queue<N> queue;
+	final ArrayList<Integer> numberOfWork;
 	private int myID;
 	private int numberOfWorker;
+	private boolean watcher;
 
 	public ConcurrentGraphSearch(BFSGraphVisitor<N, E> visitor) {
 		super(visitor);
+		myID = 0;
+		watcher = false;
 		visited = new HashSet<N>();
 		todo = new HashMap<>();
-		checker = new HashMap<>();
+		numberOfWork = new ArrayList<>();
 		numberOfWorker = Options.THREADS.getNumber();
-		myID = 0;
 	}
 
 	@Override
 	public void search(Graph<N, E> graph, N startVertex) {
 		Queue<N> queue = new LinkedList<>();
-		
+
 		// handle the start node
 		this.visitor.startVertex(graph, startVertex);
 		this.visitor.discoverVertex(graph, startVertex);
-		
+
 		for (int i = 0; i < numberOfWorker; i++) {
-			checker.put(i, 0);
-			todo.put(i, null);
+			numberOfWork.add(i, 0);
+			todo.put(i, new LinkedList<>());
 		}
 
 		Random random = new Random();
 		int number = random.nextInt(numberOfWorker);
 		System.out.println("The start vertex is copied in the index " + number);
+
 		queue.offer(startVertex);
 		todo.put(number, queue);
-		checker.put(number, 1);
+		numberOfWork.set(number, 1);
 
 		for (int i = 0; i < numberOfWorker; i++) {
 			Thread thread = new Thread(new Runnable() {
@@ -60,21 +63,43 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 			});
 			thread.start();
 		}
+
+		Thread t = new Thread(new Runnable() {
+			public void run() {
+				while (!isWorkFinished()) {
+					try {
+						System.out.println("Terminate -> wait!!!");
+						synchronized (numberOfWork) {
+							numberOfWork.wait();
+						}
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				setWatcher(true);
+				System.out.println("The Watcher terminate now!!!");
+
+			}
+		});
+		t.start();
 	}
 
-	 private void workOnGraph(Graph<N, E> graph) {
+	private void workOnGraph(Graph<N, E> graph) {
 		int ID;
-		Queue<N> queue = new LinkedList<>();
-		
+
 		synchronized (this) {
 			ID = getID();
 			setID();
 		}
+
 		Thread.currentThread().setName("Thread with ID " + ID);
-		
-		while (true) {
-			System.out.println(Thread.currentThread().getName() + " tries to work on Todo: " + todo.toString());
-			while (!(checker.get(ID) > 0)) {
+
+		while (!watcher) {
+			synchronized (this) {
+				System.out.println(Thread.currentThread().getName() + " tries to work on Todo: " + todo.toString());
+			}
+			System.out.println("Number of work for Threads -> " + numberOfWork.toString());
+			while (!(numberOfWork.get(ID) > 0)) {
 				try {
 					System.out.println(Thread.currentThread().getName() + " can't work on Todo -> wait!!!");
 					synchronized (this) {
@@ -84,27 +109,35 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 					e.printStackTrace();
 				}
 			}
+
 			N next;
 			synchronized (this) {
-				next = todo.get(ID).poll();
-				checker.put(ID, checker.get(ID) - 1);
+				next = todo.get(ID).remove();
 			}
-			System.out.println(Thread.currentThread().getName() + " takes the next node in " + ID + " ->" + todo.toString());
+			synchronized (this) {
+				System.out.println(Thread.currentThread().getName() + " takes the next node in " + ID + " -> " + todo.toString());
+			}
 			remember(next);
+			
 			for (E edge : graph.getEdges(next)) {
-				N target = edge.getTarget();
+				N target;
+				synchronized (this) {
+					target = edge.getTarget();
+				}
 				Random random = new Random();
 				int number = random.nextInt(numberOfWorker);
-				if (!alreadyWorked(target, ID)) {
+				if (!alreadyWorked(target)) {
 					this.visitor.treeEdge(graph, edge);
 					this.visitor.discoverVertex(graph, target);
 					System.out.println("Edge: " + edge.toString() + " : Target: " + target.toString());
-					
+					remember(target);
+					todo.get(ID).offer(target);
+
 					synchronized (this) {
-						queue.offer(target);
-						todo.put(number, queue);
-						checker.put(number, checker.get(number) + 1);
+						todo.put(number, todo.get(ID));
+						numberOfWork.set(number, numberOfWork.get(number) + 1);
 						System.out.println(Thread.currentThread().getName() + " puts in " + number + " -> " + todo.toString());
+						System.out.println(numberOfWork.toString());
 						notifyAll();
 						System.out.println(Thread.currentThread().getName() + " finishs his work with the node -> notifyAll!!!");
 					}
@@ -117,12 +150,18 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 
 			// done processing the node => tell the visitor
 			this.visitor.finishVertex(graph, next);
+
+			synchronized (numberOfWork) {
+				numberOfWork.set(ID, numberOfWork.get(ID) - 1);
+				numberOfWork.notifyAll();
+				System.out.println(numberOfWork.toString());
+			}
 		}
 
 	}
 
-	synchronized private boolean alreadyWorked(N node, int ID) {
-		if (!visited.contains(node) && !todo.get(ID).contains(node))
+	synchronized private boolean alreadyWorked(N node) {
+		if (!visited.contains(node))
 			return false;
 		else
 			return true;
@@ -138,5 +177,23 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 
 	synchronized private int getID() {
 		return this.myID;
+	}
+
+	@Override
+	synchronized public boolean getWatcher() {
+		return watcher;
+	}
+
+	private boolean isWorkFinished() {
+		boolean check = true;
+		for (int i = 0; i < numberOfWork.size(); i++) {
+			if (numberOfWork.get(i) != 0)
+				check = false;
+		}
+		return check;
+	}
+
+	private void setWatcher(boolean observer) {
+		this.watcher = observer;
 	}
 }
