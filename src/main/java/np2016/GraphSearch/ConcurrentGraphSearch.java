@@ -48,12 +48,13 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 		}
 
 		Random random = new Random();
-		int number = random.nextInt(numberOfWorker);
+		int number;
+		synchronized (numberOfWork){ number = random.nextInt(numberOfWorker);}
 		System.out.println("The start vertex is copied in the index " + number);
 
 		queue.offer(startVertex);
 		todo.put(number, queue);
-		numberOfWork.set(number, 1);
+		synchronized (numberOfWork){ numberOfWork.set(number, 1);}
 
 		for (int i = 0; i < numberOfWorker; i++) {
 			Thread thread = new Thread(new Runnable() {
@@ -98,8 +99,8 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 			synchronized (this) {
 				System.out.println(Thread.currentThread().getName() + " tries to work on Todo: " + todo.toString());
 			}
-			System.out.println("Number of work for Threads -> " + numberOfWork.toString());
-			while (!(numberOfWork.get(ID) > 0)) {
+			synchronized (this) { System.out.println("Number of work for Threads -> " + numberOfWork.toString());}
+			while (!(getNumberOfWork(ID) > 0)) {
 				try {
 					System.out.println(Thread.currentThread().getName() + " can't work on Todo -> wait!!!");
 					synchronized (this) {
@@ -125,16 +126,17 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 					target = edge.getTarget();
 				}
 				Random random = new Random();
-				int number = random.nextInt(numberOfWorker);
+				int number;
+				synchronized (numberOfWork){number = random.nextInt(numberOfWorker);}
 				if (!alreadyWorked(target)) {
 					this.visitor.treeEdge(graph, edge);
 					this.visitor.discoverVertex(graph, target);
 					System.out.println("Edge: " + edge.toString() + " : Target: " + target.toString());
 					remember(target);
-					todo.get(ID).offer(target);
+					todo.get(number).offer(target);
 
 					synchronized (this) {
-						todo.put(number, todo.get(ID));
+						todo.put(number, todo.get(number));
 						numberOfWork.set(number, numberOfWork.get(number) + 1);
 						System.out.println(Thread.currentThread().getName() + " puts in " + number + " -> " + todo.toString());
 						System.out.println(numberOfWork.toString());
@@ -195,5 +197,11 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 
 	private void setWatcher(boolean observer) {
 		this.watcher = observer;
+	}
+	
+	private int getNumberOfWork (int id){
+		synchronized (numberOfWork){
+			return numberOfWork.get(id);
+		}
 	}
 }
