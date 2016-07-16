@@ -10,21 +10,17 @@ public class ConcurrentLTSBuilder extends LTSBuilder {
 	@Override
 	synchronized public void startVertex(final Graph<State, Transition> graph, final State state) {
 		this.lts = new LTS(state);
-//		System.out.println("Startvertex -> " + lts);
-//		System.out.println("state -> " + state);
 	}
 
 	@Override
 	synchronized public void nonTreeEdge(final Graph<State, Transition> graph, final Transition transition) {
 		this.lts.addTransition(transition);
-//		System.out.println("Transition -> " + transition);
 	}
 
 	@Override
 	synchronized public void treeEdge(final Graph<State, Transition> graph, final Transition transition) {
 		this.lts.addState(transition.getTarget());
 		this.lts.addTransition(transition);
-//		System.out.println("Transition -> " + transition;
 	}
 
 	@Override

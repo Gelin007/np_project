@@ -216,7 +216,6 @@ public class CCSExplorer {
 			}
 			LTS lts = builder.getLTS();
 			JsonObject json = lts.toJSON();
-//			System.out.println("Main -> " + lts);
 
 			if (Options.VIEW_ONLINE.isSet()) {
 				viewOnline(fileName, json);
