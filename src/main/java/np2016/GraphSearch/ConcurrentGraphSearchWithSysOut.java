@@ -8,6 +8,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 
+import np2016.Blodsinn;
 import np2016.Options;
 import np2016.Graph.Edge;
 import np2016.Graph.Graph;
@@ -35,7 +36,7 @@ public class ConcurrentGraphSearchWithSysOut<N extends Node<?>, E extends Edge<N
 	}
 
 	@Override
-	public void search(Graph<N, E> graph, N startVertex) {
+	public void search(Graph<N, E> graph, N startVertex, Blodsinn blöd) {
 		Queue<N> queue = new LinkedList<>();
 
 		// handle the start node
@@ -77,6 +78,7 @@ public class ConcurrentGraphSearchWithSysOut<N extends Node<?>, E extends Edge<N
 						e.printStackTrace();
 					}
 				}
+				
 				setWatcher(true);
 				System.out.println("The Watcher terminate now!!!");
 
@@ -202,8 +204,8 @@ public class ConcurrentGraphSearchWithSysOut<N extends Node<?>, E extends Edge<N
 		return check;
 	}
 
-	private void setWatcher(boolean observer) {
-		this.watcher = observer;
+	synchronized private void setWatcher(boolean watcher) {
+		this.watcher = watcher;
 	}
 	
 	synchronized private boolean isTodoEmpty(int ID) {

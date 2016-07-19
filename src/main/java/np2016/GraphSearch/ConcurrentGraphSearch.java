@@ -8,6 +8,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 
+import np2016.Blodsinn;
 import np2016.Options;
 import np2016.Graph.Edge;
 import np2016.Graph.Graph;
@@ -35,7 +36,7 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	}
 
 	@Override
-	public void search(Graph<N, E> graph, N startVertex) {
+	public void search(Graph<N, E> graph, N startVertex, Blodsinn blöd) {
 		Queue<N> queue = new LinkedList<>();
 
 		// handle the start node
@@ -63,7 +64,7 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 			});
 			thread.start();
 		}
-
+		
 		Thread watcherThread = new Thread(new Runnable() {
 			public void run() {
 				while (!isWorkFinished()) {
@@ -75,8 +76,11 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 						e.printStackTrace();
 					}
 				}
-				setWatcher(true);
 
+				setWatcher(true);
+				synchronized (blöd) {
+					blöd.notifyAll();
+				}
 			}
 		});
 		watcherThread.start();
@@ -177,15 +181,17 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	}
 
 	private boolean isWorkFinished() {
-		boolean check = true;
-		for (int i = 0; i < numberOfWork.size(); i++) {
-			if (numberOfWork.get(i) != 0)
-				check = false;
+		synchronized (numberOfWork) {
+			boolean check = true;
+			for (int i = 0; i < numberOfWork.size(); i++) {
+				if (numberOfWork.get(i) != 0)
+					check = false;
+			}
+			return check;
 		}
-		return check;
 	}
 
-	private void setWatcher(boolean watcher) {
+	synchronized private void setWatcher(boolean watcher) {
 		this.watcher = watcher;
 	}
 
