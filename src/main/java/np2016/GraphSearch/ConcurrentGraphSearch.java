@@ -118,16 +118,16 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 			}
 
 			N next;
-			//synchronized (this) {
+			synchronized (this) {
 				next = (N) todo.get(ID).poll();
-			//}
+			}
 			remember(next);
 
 			for (E edge : graph.getEdges(next)) {
 				N target;
-				//synchronized (this) {
+				synchronized (this) {
 					target = edge.getTarget();
-				//}
+				}
 
 				Random random = new Random();
 				int number;
@@ -140,7 +140,7 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 						todo.put(number, todo.get(number));
 						numberOfWork.increase(number);
 						synchronized (TargetList){
-						TargetList.notifyAll();}
+						TargetList.notify();}
 					}
 				}
 			}
