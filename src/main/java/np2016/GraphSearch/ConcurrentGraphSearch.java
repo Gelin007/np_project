@@ -8,6 +8,8 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 
+import np2016.WorkList;
+import np2016.TodoHashMap;
 import np2016.NumberOfWork;
 import np2016.Blodsinn;
 import np2016.Watcher;
@@ -21,7 +23,7 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	// stores all nodes visited so far
 	private Set<N> visited;
 	// stores all nodes that still need processing
-	private HashMap<Integer, Queue<N>> todo;
+	private TodoHashMap todo;
 	private NumberOfWork numberOfWork;
 	private int myID;
 	private int numberOfThreads;
@@ -32,13 +34,13 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 		myID = 0;
 		watcher=new Watcher();
 		visited = new HashSet<N>();
-		todo = new HashMap<>();
+		
 		numberOfThreads = Options.THREADS.getNumber();
 	}
 
 	@Override
 	public void search(Graph<N, E> graph, N startVertex, Blodsinn blöd) {
-		Queue<N> queue = new LinkedList<>();
+		WorkList queue=new WorkList ();
 
 		// handle the start node
 		this.visitor.startVertex(graph, startVertex);
@@ -46,10 +48,11 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 
 		// Initialisation
 		numberOfWork=new NumberOfWork(numberOfThreads);
-		for (int i = 0; i < numberOfThreads; i++) {
+		todo=new TodoHashMap(numberOfThreads);
+		//for (int i = 0; i < numberOfThreads; i++) {
 //			numberOfWork.add(i, 0);
-			todo.put(i, new LinkedList<>());
-		}
+			//todo.put(i, new LinkedList<>());
+		//}
 
 		Random random = new Random();
 		int number = random.nextInt(numberOfThreads);
@@ -105,8 +108,8 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 					synchronized (numberOfWork) {
 						numberOfWork.notify();
 					}
-					synchronized (this) {
-						wait();
+					synchronized (todo.get(ID)) {
+						todo.get(ID).wait();
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -115,16 +118,16 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 			}
 
 			N next;
-			synchronized (this) {
-				next = todo.get(ID).poll();
-			}
+			//synchronized (this) {
+				next = (N) todo.get(ID).poll();
+			//}
 			remember(next);
 
 			for (E edge : graph.getEdges(next)) {
 				N target;
-				synchronized (this) {
+				//synchronized (this) {
 					target = edge.getTarget();
-				}
+				//}
 
 				Random random = new Random();
 				int number;
@@ -132,10 +135,12 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 
 				if (!alreadyWorked(graph, edge)) {
 					synchronized (this) {
-						todo.get(number).offer(target);
+						WorkList TargetList=todo.get(number);
+						TargetList.offer(target);
 						todo.put(number, todo.get(number));
 						numberOfWork.increase(number);
-						notifyAll();
+						synchronized (TargetList){
+						TargetList.notifyAll();}
 					}
 				}
 			}
@@ -164,6 +169,7 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 
 	}
 
+	
 	synchronized private void remember(N node) {
 		visited.add(node);
 	}
