@@ -21,3 +21,4 @@ PersonL := enteringL!.enterL!.imonabridgeL!.RunnerL
 RunnerL := leaveL!.0 + bridgebridgebridgeL!.RunnerL
 
 (Person | (PersonL + PersonR) | Person | PersonL | PersonR | Bridge) \ {enterL, enterR, leaveL, leaveR}
+
