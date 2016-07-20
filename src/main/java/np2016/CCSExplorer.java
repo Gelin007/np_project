@@ -208,16 +208,25 @@ public class CCSExplorer {
 			builder = new ConcurrentLTSBuilder();
 			search = new ConcurrentGraphSearch<State, Transition>(builder);
 		}
-
+		Blodsinn blöd = new Blodsinn();
+		
 		for (State state : semantics.getSources()) {
-			search.search(semantics, state);
+			search.search(semantics, state, blöd);
 			while (!search.getWatcher()) {
-				// Wait till the Worker build the Lts!!!
+				synchronized (blöd) {
+					try {
+						if (search.getWatcher()) {
+							break;
+						}
+						blöd.wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
 			}
+			
 			LTS lts = builder.getLTS();
 			JsonObject json = lts.toJSON();
-//			System.out.println("Main -> " + lts);
-
 			if (Options.VIEW_ONLINE.isSet()) {
 				viewOnline(fileName, json);
 			} else {

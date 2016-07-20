@@ -118,7 +118,7 @@ public class LTS implements Graph<State, Transition> {
 
         State start = transition.getStart();
         State target = transition.getTarget();
-
+        
         assert this.edges.containsKey(start) && this.edges.containsKey(target);
 
         List<Transition> transitions = this.edges.get(start);
