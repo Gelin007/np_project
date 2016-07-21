@@ -1,6 +1,6 @@
 package np2016.GraphSearch;
 
-import np2016.Blodsinn;
+import np2016.Blödsinn;
 import np2016.Graph.Edge;
 import np2016.Graph.Graph;
 import np2016.Graph.Node;
@@ -23,8 +23,6 @@ public interface GraphSearch<N extends Node<?>, E extends Edge<N, ?>> {
      * @param startVertex
      *            the node from where the search should start.
      */
-    void search(Graph<N, E> graph, N startVertex, Blodsinn blöd);
-    
-    boolean getWatcher();
+    void search(Graph<N, E> graph, N startVertex, Blödsinn blöd);
     
 }

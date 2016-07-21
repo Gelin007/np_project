@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 
-import np2016.Blodsinn;
+import np2016.Blödsinn;
 import np2016.Graph.Edge;
 import np2016.Graph.Graph;
 import np2016.Graph.Node;
@@ -34,7 +34,7 @@ extends BFSGraphSearch<N, E> {
     }
 
     @Override
-    public void search(final Graph<N, E> graph, final N startVertex, Blodsinn blöd) {
+    public void search(final Graph<N, E> graph, final N startVertex, Blödsinn blöd) {
         // stores all nodes visited so far
         final Set<N> visited = new HashSet<N>();
         // stores all nodes that still need processing
@@ -77,8 +77,4 @@ extends BFSGraphSearch<N, E> {
         }
     }
 
-	@Override
-	public boolean getWatcher() {
-		return true;
-	}
 }

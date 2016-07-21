@@ -1,19 +1,14 @@
 package np2016.GraphSearch;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Random;
 import java.util.Set;
 
-import np2016.WorkList;
-import np2016.TodoHashMap;
-import np2016.NumberOfWork;
-import np2016.Blodsinn;
-import np2016.Watcher;
+import np2016.AtomicNumber;
+import np2016.Blödsinn;
 import np2016.Options;
+import np2016.Watcher;
+import np2016.WorkList;
 import np2016.Graph.Edge;
 import np2016.Graph.Graph;
 import np2016.Graph.Node;
@@ -23,134 +18,105 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	// stores all nodes visited so far
 	private Set<N> visited;
 	// stores all nodes that still need processing
-	private TodoHashMap todo;
-	private NumberOfWork numberOfWork;
-	private int myID;
+	private WorkList<N> todo;
+	private AtomicNumber activWorker;
 	private int numberOfThreads;
 	private Watcher watcher;
+	private LinkedList<Thread> listOfThreads;
 
 	public ConcurrentGraphSearch(BFSGraphVisitor<N, E> visitor) {
 		super(visitor);
-		myID = 0;
-		watcher=new Watcher();
+		activWorker = new AtomicNumber();
+		watcher = new Watcher();
 		visited = new HashSet<N>();
-		
+		todo = new WorkList<N>();
+		listOfThreads = new LinkedList<>();
 		numberOfThreads = Options.THREADS.getNumber();
 	}
 
 	@Override
-	public void search(Graph<N, E> graph, N startVertex, Blodsinn blöd) {
-		WorkList queue=new WorkList ();
+	public void search(Graph<N, E> graph, N startVertex, Blödsinn blöd) {
 
 		// handle the start node
 		this.visitor.startVertex(graph, startVertex);
 		this.visitor.discoverVertex(graph, startVertex);
-
-		// Initialisation
-		numberOfWork=new NumberOfWork(numberOfThreads);
-		todo=new TodoHashMap(numberOfThreads);
-		//for (int i = 0; i < numberOfThreads; i++) {
-//			numberOfWork.add(i, 0);
-			//todo.put(i, new LinkedList<>());
-		//}
-
-		Random random = new Random();
-		int number = random.nextInt(numberOfThreads);
-
-		queue.offer(startVertex);
-		todo.put(number, queue);
-		numberOfWork.set(number, 1);
+		todo.offer(startVertex);
 
 		for (int i = 0; i < numberOfThreads; i++) {
 			Thread thread = new Thread(new Runnable() {
 				public void run() {
-					workOnGraph(graph);
+					workOnGraph(graph, blöd);
 				}
 			});
 			thread.start();
 		}
-		
+
 		Thread watcherThread = new Thread(new Runnable() {
 			public void run() {
-				while (!numberOfWork.isWorkFinished()) {
+				while (!activWorker.check(0)) {
 					try {
-						synchronized (numberOfWork) {
-							numberOfWork.wait();
+						synchronized (activWorker) {
+							activWorker.wait();
 						}
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
 
-				watcher.setWatcher(true);
-				synchronized (blöd) {
-					blöd.notifyAll();
-				}
+				interruptAllWorker(listOfThreads);
+
 			}
 		});
 		watcherThread.start();
 
 	}
 
-	private void workOnGraph(Graph<N, E> graph) {
-		int ID;
-
-		synchronized (this) {
-			ID = getID();
-			setID();
-		}
-
-		Thread.currentThread().setName("Thread with ID " + ID);
+	private void workOnGraph(Graph<N, E> graph, Blödsinn blöd) {
+		listOfThreads.offer(Thread.currentThread());
 
 		while (true) {
-			while (isTodoEmpty(ID)) {
+			while (todo.isEmpty()) {
 				try {
-					synchronized (numberOfWork) {
-						numberOfWork.notify();
+					if (activWorker.check(0)) {
+						synchronized (activWorker) {
+							activWorker.notify();
+						}
 					}
-					synchronized (todo.get(ID)) {
-						todo.get(ID).wait();
+					
+					synchronized (todo) {
+						watcher.setWatcher(true);
+						todo.wait();
 					}
 				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-
-			}
-
-			N next;
-			synchronized (this) {
-				next = (N) todo.get(ID).poll();
-			}
-			remember(next);
-
-			for (E edge : graph.getEdges(next)) {
-				N target;
-				synchronized (this) {
-					target = edge.getTarget();
-				}
-
-				Random random = new Random();
-				int number;
-				number = random.nextInt(numberOfThreads);
-
-				if (!alreadyWorked(graph, edge)) {
-					synchronized (this) {
-						WorkList TargetList=todo.get(number);
-						TargetList.offer(target);
-						todo.put(number, todo.get(number));
-						numberOfWork.increase(number);
-						synchronized (TargetList){
-						TargetList.notify();}
+					synchronized (blöd) {
+						blöd.notifyAll();
 					}
 				}
 			}
 
+			watcher.setWatcher(false);
+			activWorker.increase();
+			N next = (N) todo.poll();
+			remember(next);
+
+			if (next != null) {
+				for (E edge : graph.getEdges(next)) {
+					N target = edge.getTarget();
+
+					if (!alreadyWorked(graph, edge)) {
+						todo.offer(target);
+						synchronized (todo) {
+							todo.notify();
+						}
+					} else {
+						this.visitor.nonTreeEdge(graph, edge);
+					}
+
+				}
+			}
 			// done processing the node => tell the visitor
 			this.visitor.finishVertex(graph, next);
-			synchronized (numberOfWork) {
-				numberOfWork.decrease(ID);
-				numberOfWork.notifyAll();
-			}
+			activWorker.decrease();
 
 		}
 
@@ -158,47 +124,22 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 
 	synchronized private boolean alreadyWorked(Graph<N, E> graph, E edge) {
 		if (!visited.contains(edge.getTarget())) {
-			remember(edge.getTarget());
+			visited.add(edge.getTarget());
 			this.visitor.treeEdge(graph, edge);
 			this.visitor.discoverVertex(graph, edge.getTarget());
 			return false;
-		} else {
-			this.visitor.nonTreeEdge(graph, edge);
-			return true;
 		}
-
+		return true;
 	}
 
-	
 	synchronized private void remember(N node) {
 		visited.add(node);
 	}
-
-	synchronized private void setID() {
-		this.myID++;
-	}
-
-	synchronized private int getID() {
-		return this.myID;
-	}
-
 	
-
-
-	
-
-	
-
-	synchronized private boolean isTodoEmpty(int ID) {
-		if (todo.get(ID).isEmpty()) {
-			return true;
+	synchronized private void interruptAllWorker(LinkedList<Thread> listOfThreads) {
+		for (int i = 0; i < listOfThreads.size(); i++) {
+			listOfThreads.get(i).interrupt();
 		}
-		return false;
 	}
 
-	@Override
-	public boolean getWatcher() {
-		// TODO Auto-generated method stub
-		return watcher.getWatcher();
-	}
 }
