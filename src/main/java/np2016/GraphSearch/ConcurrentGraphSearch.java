@@ -1,7 +1,7 @@
 package np2016.GraphSearch;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 
 import np2016.AtomicNumber;
@@ -22,15 +22,18 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	private AtomicNumber activWorker;
 	private int numberOfThreads;
 	private Watcher watcher;
-	private LinkedList<Thread> listOfThreads;
+	private ArrayList<Thread> destroyer;
 
+	/**
+	 * @param visitor
+	 */
 	public ConcurrentGraphSearch(BFSGraphVisitor<N, E> visitor) {
 		super(visitor);
 		activWorker = new AtomicNumber();
 		watcher = new Watcher();
 		visited = new HashSet<N>();
 		todo = new WorkList<N>();
-		listOfThreads = new LinkedList<>();
+		destroyer = new ArrayList<Thread>();
 		numberOfThreads = Options.THREADS.getNumber();
 	}
 
@@ -48,12 +51,13 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 					workOnGraph(graph, blöd);
 				}
 			});
+			destroyer.add(thread);
 			thread.start();
 		}
 
 		Thread watcherThread = new Thread(new Runnable() {
 			public void run() {
-				while (!activWorker.check(0)) {
+				while (!activWorker.check(0) || !todo.isEmpty()) {
 					try {
 						synchronized (activWorker) {
 							activWorker.wait();
@@ -62,18 +66,26 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 						e.printStackTrace();
 					}
 				}
-
-				interruptAllWorker(listOfThreads);
-
+				
+				for (int i = 0; i < destroyer.size(); i++) {
+					destroyer.get(i).interrupt();
+				}
+				
+				synchronized (blöd) {
+					watcher.setWatcher(true);
+					blöd.notify();
+				}
 			}
 		});
 		watcherThread.start();
 
 	}
 
+	/**
+	 * @param graph
+	 * @param blöd
+	 */
 	private void workOnGraph(Graph<N, E> graph, Blödsinn blöd) {
-		listOfThreads.offer(Thread.currentThread());
-
 		while (true) {
 			while (todo.isEmpty()) {
 				try {
@@ -82,19 +94,14 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 							activWorker.notify();
 						}
 					}
-					
 					synchronized (todo) {
-						watcher.setWatcher(true);
 						todo.wait();
 					}
 				} catch (InterruptedException e) {
-					synchronized (blöd) {
-						blöd.notifyAll();
-					}
+					return;
 				}
 			}
 
-			watcher.setWatcher(false);
 			activWorker.increase();
 			N next = (N) todo.poll();
 			remember(next);
@@ -102,7 +109,7 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 			if (next != null) {
 				for (E edge : graph.getEdges(next)) {
 					N target = edge.getTarget();
-
+					
 					if (!alreadyWorked(graph, edge)) {
 						todo.offer(target);
 						synchronized (todo) {
@@ -122,6 +129,11 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 
 	}
 
+	/**
+	 * @param graph
+	 * @param edge
+	 * @return
+	 */
 	synchronized private boolean alreadyWorked(Graph<N, E> graph, E edge) {
 		if (!visited.contains(edge.getTarget())) {
 			visited.add(edge.getTarget());
@@ -132,14 +144,16 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 		return true;
 	}
 
+	/**
+	 * @param node
+	 */
 	synchronized private void remember(N node) {
 		visited.add(node);
 	}
-	
-	synchronized private void interruptAllWorker(LinkedList<Thread> listOfThreads) {
-		for (int i = 0; i < listOfThreads.size(); i++) {
-			listOfThreads.get(i).interrupt();
-		}
+
+	@Override
+	public boolean getWatcher() {
+		return watcher.getWatcher();
 	}
 
 }

@@ -25,4 +25,8 @@ public interface GraphSearch<N extends Node<?>, E extends Edge<N, ?>> {
      */
     void search(Graph<N, E> graph, N startVertex, Blödsinn blöd);
     
+    /**
+     * @return
+     */
+    boolean getWatcher();
 }

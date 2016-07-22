@@ -49,7 +49,7 @@ public final class CCSSemantics implements Graph<State, Transition> {
     }
 
     @Override
-    synchronized public List<Transition> getEdges(final State state) {
+    public List<Transition> getEdges(final State state) {
         assert state != null;
         assert state.getInfo() != null;
 

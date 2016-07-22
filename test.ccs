@@ -1,4 +1,23 @@
-A := i.B + i.i.B + i.i.i.B + i.i.i.i.B + i.i.i.i.i.B + i.i.i.i.i.i.B + i.i.i.i.i.i.i.B + i.i.i.i.i.i.i.i.B + i.i.i.i.i.i.i.i.i.B
-B := i.i.i.i.i.i.i.i.i.B 
+Bridge := enterL?.BridgeL0 + enterR?.BridgeR0
 
-A
+BridgeR0 := leaveR?.Bridge + enterR?.BridgeR1
+BridgeR1 := leaveR?.BridgeR0 + enterR?.BridgeR2
+BridgeR2 := leaveR?.BridgeR1 + enterR?.BridgeR3
+BridgeR3 := leaveR?.BridgeR2 + enterR?.BridgeR4
+BridgeR4 := leaveR?.BridgeR3
+
+BridgeL0 := leaveL?.Bridge + enterL?.BridgeL1
+BridgeL1 := leaveL?.BridgeL0 + enterL?.BridgeL2
+BridgeL2 := leaveL?.BridgeL1 + enterL?.BridgeL3
+BridgeL3 := leaveL?.BridgeL2 + enterL?.BridgeL4
+BridgeL4 := leaveL?.BridgeL3
+
+Person := PersonR + PersonL
+
+PersonR := enteringR!.enterR!.imonabridgeR!.RunnerR
+RunnerR := leaveR!.0 + bridgebridgebridgeR!.RunnerR
+
+PersonL := enteringL!.enterL!.imonabridgeL!.RunnerL
+RunnerL := leaveL!.0 + bridgebridgebridgeL!.RunnerL
+
+(Person | (PersonL + PersonR) | Person | PersonL | PersonR | Bridge) \ {enterL, enterR, leaveL, leaveR}

@@ -77,4 +77,9 @@ extends BFSGraphSearch<N, E> {
         }
     }
 
+	@Override
+	public boolean getWatcher() {
+		return true;
+	}
+
 }

@@ -67,7 +67,7 @@ public class Edge<N extends Node<?>, EdgeInfo> {
      *
      * @return the target node.
      */
-    synchronized public N getTarget() {
+    public N getTarget() {
         return this.to;
     }
 

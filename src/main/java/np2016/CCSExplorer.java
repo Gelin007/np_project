@@ -213,7 +213,7 @@ public class CCSExplorer {
 		for (State state : semantics.getSources()) {
 			search.search(semantics, state, blöd);
 			
-			if (Options.THREADS.getNumber() != 0) {
+			while (!search.getWatcher()) {
 				synchronized (blöd) {
 					try {
 						blöd.wait();
