@@ -17,14 +17,14 @@ public class Watcher {
 	/**
 	 * @return
 	 */
-	public boolean getWatcher() {
+	synchronized public boolean getWatcher() {
 		return watcher;
 	}
 
 	/**
 	 * @param watcher
 	 */
-	public void setWatcher(boolean watcher) {
+	synchronized public void setWatcher(boolean watcher) {
 		this.watcher = watcher;
 	}
 }

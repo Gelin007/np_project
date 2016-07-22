@@ -13,6 +13,12 @@ import np2016.Graph.Edge;
 import np2016.Graph.Graph;
 import np2016.Graph.Node;
 
+/**
+ * @author 
+ *
+ * @param <N> 
+ * @param <E>
+ */
 public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> extends BFSGraphSearch<N, E> {
 
 	// stores all nodes visited so far
@@ -70,9 +76,8 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 				for (int i = 0; i < destroyer.size(); i++) {
 					destroyer.get(i).interrupt();
 				}
-				
+				watcher.setWatcher(true);
 				synchronized (blöd) {
-					watcher.setWatcher(true);
 					blöd.notify();
 				}
 			}
