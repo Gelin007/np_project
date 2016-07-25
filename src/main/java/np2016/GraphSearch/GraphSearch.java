@@ -1,6 +1,6 @@
 package np2016.GraphSearch;
 
-import np2016.Blödsinn;
+import np2016.NonSense;
 import np2016.Graph.Edge;
 import np2016.Graph.Graph;
 import np2016.Graph.Node;
@@ -15,18 +15,20 @@ import np2016.Graph.Node;
  *            the edge type of the graph that is being searched.
  */
 public interface GraphSearch<N extends Node<?>, E extends Edge<N, ?>> {
-    /**
-     * Performs the graph search from the given start node.
-     *
-     * @param graph
-     *            the graph that should be searched.
-     * @param startVertex
-     *            the node from where the search should start.
-     */
-    void search(Graph<N, E> graph, N startVertex, Blödsinn blöd);
-    
-    /**
-     * @return
-     */
-    boolean getWatcher();
+	/**
+	 * Performs the graph search from the given start node.
+	 *
+	 * @param graph
+	 *            the graph that should be searched.
+	 * @param startVertex
+	 *            the node from where the search should start.
+	 */
+	void search(Graph<N, E> graph, N startVertex, NonSense blöd);
+
+	/**
+	 * Gets the watcher.
+	 * 
+	 * @return boolean
+	 */
+	boolean getWatcher();
 }

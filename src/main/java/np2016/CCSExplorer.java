@@ -199,7 +199,7 @@ public class CCSExplorer {
 		CCSSemantics semantics = new CCSSemantics(program);
 		LTSBuilder builder = null;
 		GraphSearch<State, Transition> search = null;
-		Blödsinn blöd = new Blödsinn();
+		NonSense nonsense = new NonSense();
 
 		if (Options.THREADS.getNumber() == 0) {
 			// sequential solution
@@ -211,12 +211,12 @@ public class CCSExplorer {
 		}
 		
 		for (State state : semantics.getSources()) {
-			search.search(semantics, state, blöd);
+			search.search(semantics, state, nonsense);
 			
 			while (!search.getWatcher()) {
-				synchronized (blöd) {
+				synchronized (nonsense) {
 					try {
-						blöd.wait();
+						nonsense.wait();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}

@@ -5,6 +5,11 @@ import np2016.CCSSemantics.State;
 import np2016.CCSSemantics.Transition;
 import np2016.Graph.Graph;
 
+/**
+ * Concurrent implementation of the {@link LTSBuilder}.
+ *
+ * @see LTSBuilder
+ */
 public class ConcurrentLTSBuilder extends LTSBuilder {
 
 	@Override

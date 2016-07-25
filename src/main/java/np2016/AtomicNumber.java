@@ -1,5 +1,9 @@
 package np2016;
 
+/**
+ * AtomicNumber is a monitor, that will be used for store the number of working
+ * Threads.
+ */
 public class AtomicNumber {
 
 	private int x;
@@ -9,39 +13,25 @@ public class AtomicNumber {
 	}
 
 	/**
-	 * @param x
-	 */
-	synchronized public void set(int x) {
-		this.x = x;
-
-	}
-
-	/**
-	 * 
+	 * Increases the number of working Threads.
 	 */
 	synchronized public void increase() {
 		x++;
 	}
 
 	/**
-	 * @return
-	 */
-	synchronized public int get() {
-		return x;
-	}
-	
-	/**
-	 * 
+	 * Cecreases the number of working Threads.
 	 */
 	synchronized public void decrease() {
 		x--;
 	}
 
 	/**
-	 * @param y
-	 * @return
+	 * Checks, whether the number of working Threads is egal to 0.
+	 * 
+	 * @return boolean
 	 */
-	synchronized public boolean check(int y) {
-		return x == y;
+	synchronized public boolean check() {
+		return x == 0;
 	}
 }
