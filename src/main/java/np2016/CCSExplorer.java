@@ -213,8 +213,8 @@ public class CCSExplorer {
 		for (State state : semantics.getSources()) {
 			search.search(semantics, state, nonsense);
 			
-			while (!search.getWatcher()) {
-				synchronized (nonsense) {
+			synchronized (nonsense) {
+				while (!search.getWatcher()) {
 					try {
 						nonsense.wait();
 					} catch (InterruptedException e) {
