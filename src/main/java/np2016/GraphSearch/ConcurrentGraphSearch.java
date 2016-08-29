@@ -60,14 +60,14 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	 * an object that is used for synchronizing the watcher and the worker
 	 * so that the watcher can check again if he can terminate.
 	 */
-	private Object object1;
+	private Object lock1;
 	
 	
 	/**
 	 * an object that is used, for synchronizing between The workers
 	 * when a worker is waiting of work, some worker will notify them.
 	 */
-	private Object object2;
+	private Object lock2;
 
 	/**
 	 * ArrayList of references of all Workers. It will be used for the
@@ -80,8 +80,8 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	 */
 	public ConcurrentGraphSearch(BFSGraphVisitor<N, E> visitor) {
 		super(visitor);
-		object1 = new Object();
-		object2 = new Object();
+		lock1 = new Object();
+		lock2 = new Object();
 		activWorker = new AtomicNumber();
 		watcher = new Watcher();
 		visited = new HashSet<N>();
@@ -120,10 +120,10 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 		Thread watcherThread = new Thread(new Runnable() {
 			public void run() {
 
-				synchronized (object1) {
-					while (test()) {
+				synchronized (lock1) {
+					while (atomarCheck()) {
 						try {
-							object1.wait();
+							lock1.wait();
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
@@ -156,15 +156,15 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 			// notify of any Worker, which add a node in the worklist.
 			// Before he do it, he may send a notify to the Watcher-thread, iff
 			// no task is available for some Worker.
-			synchronized (object2) {
+			synchronized (lock2) {
 				while (todo.isEmpty()) {
 					try {
-						synchronized (object1) {
+						synchronized (lock1) {
 							if (activWorker.check()) {
-								object1.notify();
+								lock1.notify();
 							}
 						}
-						object2.wait();
+						lock2.wait();
 					} catch (InterruptedException e) {
 						return;
 					}
@@ -189,8 +189,8 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 						todo.offer(target);
 						// notify another waiting Worker that there is a
 						// available task now but only the unlucky one (^_^)
-						synchronized (object2) {
-							object2.notify();
+						synchronized (lock2) {
+							lock2.notify();
 						}
 					} else {
 						// discovered => tell the visitor there is a non-tree
@@ -244,12 +244,15 @@ public class ConcurrentGraphSearch<N extends Node<?>, E extends Edge<N, ?>> exte
 	}
 
 	/**
-	 * @return
+	 * Checks atomarily, whether the number of working Threads is egal to 0 
+	 * and todo is empty (We return the negated value).
+	 *  
+	 * @return boolean
 	 */
-	public boolean test() {
+	public boolean atomarCheck() {
 		synchronized (todo) {
 			synchronized (activWorker) {
-				return !activWorker.check() || !todo.isEmpty();
+				return !(activWorker.check() && todo.isEmpty());
 			}
 		}
 	}
